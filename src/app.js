@@ -454,8 +454,9 @@ function measure(canvas, shift = [0, 0], areas = blocks) {
   for (const b of areas) {
     const grid = centers(b, shift),
       r = radius(grid, w, h),
+      // Sample the centre to keep preprinted outlines out of the ink measurement.
       values = grid.map((row) =>
-        row.map((p) => mark(p, b.id === "booklet" ? r * 0.5 : r, !b.id)),
+        row.map((p) => mark(p, r * (b.id === "booklet" ? 0.5 : 0.72), !b.id)),
       );
     if (b.id === "booklet") {
       const label = pick(values[0], "AB");
