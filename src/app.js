@@ -13,7 +13,7 @@ let dual = false,
   keyPage = 1,
   keyType = "",
   keys = {};
-let keyDoc,
+let keyDocs = [],
   studentDoc,
   blocks = [],
   pending = null,
@@ -80,9 +80,8 @@ const groupMode = () =>
 el("groupMode").onchange = () => {
   const ab = groupMode() === "ab";
   el("setup").hidden = false;
-  el("keyHelp").textContent = ab
-    ? "A ve B cevap anahtarlarını aynı PDF’ye ekleyin. Her sayfada kitapçık türünü işaretleyin."
-    : "Tüm öğrenciler için geçerli tek sayfalık cevap anahtarını yükleyin.";
+  el("singleKey").hidden = ab;
+  el("groupKeyA").hidden = el("groupKeyB").hidden = !ab;
   el("studentHelp").textContent = ab
     ? "A ve B formları karışık sırada olabilir. Her öğrenci için bir sayfa kullanın."
     : "Öğrenci formlarını tek PDF olarak yükleyin. Her öğrenci için bir sayfa kullanın.";
@@ -102,6 +101,7 @@ function validate() {
 async function action(fn) {
   if (busy) return;
   busy = true;
+  el("groupMode").inert = true;
   el("work").inert = true;
   el("layout").inert = true;
   el("prepare").disabled = el("demo").disabled = true;
@@ -111,6 +111,7 @@ async function action(fn) {
     status(error.message || String(error));
   } finally {
     busy = false;
+    el("groupMode").inert = false;
     el("work").inert = el("layout").inert = false;
     el("prepare").disabled = el("demo").disabled = false;
   }
@@ -136,29 +137,47 @@ async function raster(doc, n) {
   page.cleanup();
   return canvas;
 }
-async function start(k, s) {
+async function start(keyFiles, studentsFile) {
   validate();
-  if (!groupMode()) throw Error("Önce sınav düzenini seçin.");
-  if (!k || !s) throw Error("Cevap anahtarını ve öğrenci PDF’sini seçin.");
-  let kd, sd;
-  try {
-    kd = await getDoc(k);
-    if (kd.numPages !== (groupMode() === "ab" ? 2 : 1))
+  const grouped = groupMode() === "ab",
+    groups = grouped ? ["A", "B"] : [""];
+  for (const [i, group] of groups.entries()) {
+    if (!keyFiles[i])
       throw Error(
-        "Tek ortak anahtar için bir, A/B düzeni için iki anahtar sayfası yükleyin.",
+        (group ? group + " kitapçığı cevap anahtarı" : "Cevap anahtarı") +
+          " için PDF seçin.",
       );
-    sd = await getDoc(s);
-    source = await raster(kd, 1);
-  } catch (e) {
-    await kd?.destroy();
-    await sd?.destroy();
-    throw e;
   }
-  await keyDoc?.destroy();
-  await studentDoc?.destroy();
-  keyDoc = kd;
+  if (!studentsFile) throw Error("Öğrenci formları için PDF seçin.");
+  const docs = [];
+  let sd, firstImage;
+  try {
+    for (const [i, group] of groups.entries()) {
+      const doc = await getDoc(keyFiles[i]);
+      docs.push(doc);
+      if (doc.numPages !== 1)
+        throw Error(
+          (group ? group + " kitapçığı cevap anahtarı" : "Cevap anahtarı") +
+            " tek sayfalık bir PDF olmalı.",
+        );
+    }
+    sd = await getDoc(studentsFile);
+    firstImage = await raster(docs[0], 1);
+  } catch (error) {
+    await Promise.allSettled(
+      [...docs, sd].filter(Boolean).map((doc) => doc.loadingTask.destroy()),
+    );
+    throw error;
+  }
+  await Promise.allSettled(
+    [...keyDocs, studentDoc]
+      .filter(Boolean)
+      .map((doc) => doc.loadingTask.destroy()),
+  );
+  keyDocs = docs;
   studentDoc = sd;
-  dual = groupMode() === "ab";
+  source = firstImage;
+  dual = grouped;
   el("groupMode").disabled = true;
   keyPage = 1;
   keyType = "";
@@ -178,7 +197,9 @@ async function start(k, s) {
   el("layout").hidden = el("work").hidden = false;
   el("review").hidden = el("results").hidden = true;
   el("count").disabled = el("choices").disabled = true;
-  el("pageTitle").textContent = "Cevap anahtarı";
+  el("pageTitle").textContent = dual
+    ? "A kitapçığı cevap anahtarı"
+    : "Cevap anahtarı";
   el("rows").value = count();
   layout();
   paint();
@@ -192,7 +213,14 @@ el("reset").onclick = () => {
     location.reload();
 };
 el("prepare").onclick = () =>
-  action(() => start(el("keyFile").files[0], el("students").files[0]));
+  action(() =>
+    start(
+      groupMode() === "ab"
+        ? [el("keyA").files[0], el("keyB").files[0]]
+        : [el("keyFile").files[0]],
+      el("students").files[0],
+    ),
+  );
 function layout() {
   el("addName").disabled = blocks.some((b) => b.id === "name");
   el("addBook").hidden = !dual;
@@ -669,7 +697,7 @@ function review() {
   el("review").hidden = false;
   el("nav").replaceChildren();
   el("nameLabel").querySelector(".name-scan")?.remove();
-  el("bookLabel").hidden = isKey ? !dual : kind !== "book";
+  el("bookLabel").hidden = isKey || kind !== "book";
   el("bookType").value = isKey ? keyType : rec.booklet;
   el("idLabel").hidden = kind !== "id";
   el("nameLabel").hidden = el("nameLetters").hidden = kind !== "name";
@@ -677,7 +705,9 @@ function review() {
   el("confirm").hidden = kind === "question";
   el("reviewTitle").textContent = isKey ? "Anahtarı doğrula" : editing.label;
   el("pageTitle").textContent = isKey
-    ? "Cevap anahtarı · " + keyPage + " / " + keyDoc.numPages
+    ? dual
+      ? "AB"[keyPage - 1] + " kitapçığı cevap anahtarı"
+      : "Cevap anahtarı"
     : "Öğrenci formu · " + (current + 1) + " / " + records.length;
   el("hint").textContent =
     kind === "alignment"
@@ -707,19 +737,24 @@ function review() {
     : kind === "question"
       ? "İşareti taramadan kontrol edin. Seçtiğiniz cevap kaydedilir."
       : editing.detail;
+  if (isKey && dual && keyType && keyType !== "AB"[keyPage - 1]) {
+    const slot = "AB"[keyPage - 1];
+    el("note").textContent =
+      "Bu dosya " +
+      slot +
+      " alanına yüklendi, ancak optikte " +
+      keyType +
+      " işaretli. Onaylarsanız " +
+      slot +
+      " anahtarı olarak kullanılacak.";
+  }
   el("confirm").textContent = isKey
-    ? keyPage < keyDoc.numPages
-      ? "Anahtarı onayla ve sonraki anahtarı aç"
+    ? keyPage < keyDocs.length
+      ? "A anahtarını onayla ve B anahtarını aç"
       : "Anahtarı onayla ve formları oku"
     : "Düzeltmeyi kaydet";
   paint();
 }
-el("bookType").onchange = () => {
-  if (!editing) {
-    keyType = el("bookType").value;
-    paint();
-  }
-};
 el("confirm").onclick = () =>
   action(async () => {
     validate();
@@ -727,16 +762,11 @@ el("confirm").onclick = () =>
       if (key.some((v) => v === "?" || v === "-"))
         throw Error("Anahtardaki tüm soruların doğru şıkkını belirtin.");
       if (dual) {
-        if (!keyType)
-          throw Error("Anahtarın kitapçık türünü formdan kontrol edip seçin.");
-        if (Object.hasOwn(keys, keyType) && keys[keyType].page !== keyPage)
-          throw Error(
-            "Bu kitapçık için bir anahtar zaten onaylandı. A ve B seçimlerini kontrol edin.",
-          );
-        if (keyPage < keyDoc.numPages) {
-          const img = await raster(keyDoc, keyPage + 1),
+        const group = "AB"[keyPage - 1];
+        if (keyPage < keyDocs.length) {
+          const img = await raster(keyDocs[keyPage], 1),
             areas = blocks;
-          keys[keyType] = { page: keyPage, answers: [...key] };
+          keys[group] = { answers: [...key] };
           keyPage++;
           source = img;
           blocks = areas;
@@ -746,10 +776,10 @@ el("confirm").onclick = () =>
           keyType = read.booklet;
           focusQuestion = firstIssue(key, true);
           review();
-          status("İkinci anahtarı kontrol edin.");
+          status("B kitapçığının cevap anahtarını kontrol edin.");
           return;
         }
-        keys[keyType] = { page: keyPage, answers: [...key] };
+        keys[group] = { answers: [...key] };
       }
       const template = registrationTemplate(source),
         next = [];
@@ -1014,10 +1044,11 @@ el("demo").onclick = () =>
   action(async () => {
     const ab = groupMode() === "ab";
     const { PDFDocument, rgb } = await import("pdf-lib");
-    async function sample(isKey) {
+    async function sample(isKey, groupIndex = 0) {
       const doc = await PDFDocument.create(),
-        pages = isKey && !ab ? 1 : 2;
-      for (let k = 0; k < pages; k++) {
+        pages = isKey ? 1 : 2;
+      for (let pageIndex = 0; pageIndex < pages; pageIndex++) {
+        const k = isKey ? groupIndex : pageIndex;
         const page = doc.addPage([600, 800]),
           shift = k && !isKey ? 2 : 0;
         page.drawText(isKey ? "Cevap anahtari" : "Optik form " + (k + 1), {
@@ -1088,7 +1119,12 @@ el("demo").onclick = () =>
     el("mode").value = "equal";
     el("total").value = 100;
     settings(true);
-    await start(await sample(true), await sample(false));
+    await start(
+      ab
+        ? [await sample(true, 0), await sample(true, 1)]
+        : [await sample(true)],
+      await sample(false),
+    );
     const pt = (x, y) => [x / 600, y / 800];
     blocks = [
       {

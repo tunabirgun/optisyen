@@ -64,7 +64,7 @@
         </fieldset>
         <button id="reset" hidden>Yeni sınav</button>
       </section>
-      <section id="setup" hidden>
+      <section id="setup">
         <details id="configDetails" open>
           <summary>Sınav ve belgeler</summary>
           <div class="inputs">
@@ -100,19 +100,36 @@
           <p id="summary"></p>
           <div id="weights"></div>
           <div class="files">
-            <label
+            <label id="singleKey"
               >Cevap anahtarı<input
                 id="keyFile"
                 type="file"
-                accept="application/pdf,.pdf" /><small
-                id="keyHelp"
-              ></small></label
-            ><label
+                accept="application/pdf,.pdf"
+              /><small>Tüm öğrenciler için tek sayfalık PDF.</small></label
+            >
+            <label id="groupKeyA" hidden
+              >A kitapçığı cevap anahtarı<input
+                id="keyA"
+                type="file"
+                accept="application/pdf,.pdf"
+              /><small>A grubunun tek sayfalık cevap optiği.</small></label
+            >
+            <label id="groupKeyB" hidden
+              >B kitapçığı cevap anahtarı<input
+                id="keyB"
+                type="file"
+                accept="application/pdf,.pdf"
+              /><small>B grubunun tek sayfalık cevap optiği.</small></label
+            >
+            <label
               >Öğrenci formları<input
                 id="students"
                 type="file"
-                accept="application/pdf,.pdf" /><small id="studentHelp"></small
-            ></label>
+                accept="application/pdf,.pdf"
+              /><small id="studentHelp"
+                >Her öğrenci için bir sayfa içeren tek PDF.</small
+              ></label
+            >
           </div>
           <div class="actions">
             <button id="prepare" class="primary">Formları aç</button
