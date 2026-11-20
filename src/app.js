@@ -29,6 +29,35 @@ const count = () => Number(el("count").value),
 const status = (message) => (el("status").textContent = message);
 const assigned = () =>
   blocks.filter((b) => !b.id).reduce((n, b) => n + b.rows, 0);
+el("homeLink").addEventListener("click", (event) => {
+  if (
+    event.ctrlKey ||
+    event.metaKey ||
+    event.shiftKey ||
+    event.altKey ||
+    event.button !== 0
+  )
+    return;
+  event.preventDefault();
+  document
+    .querySelector("main")
+    .classList.toggle("exam-home", phase !== "setup");
+  el("configDetails").open = true;
+  document.querySelector("main h1").focus({ preventScroll: true });
+  window.scrollTo(0, 0);
+});
+el("resumeExam").addEventListener("click", () => {
+  document.querySelector("main").classList.remove("exam-home");
+  el("configDetails").open = false;
+  const heading = document.querySelector(
+    "#layout:not([hidden]) h2, #issues:not([hidden]) h2, #work:not([hidden]) h2, #results:not([hidden]) h2",
+  );
+  if (heading) {
+    heading.tabIndex = -1;
+    heading.focus();
+    heading.scrollIntoView({ block: "start" });
+  }
+});
 function weights() {
   if (el("mode").value === "equal")
     return Array(count()).fill(Number(el("total").value) / count());
@@ -188,6 +217,8 @@ async function start(keyFiles, studentsFile) {
   current = -1;
   phase = "layout";
   pending = null;
+  document.querySelector("main").classList.remove("exam-home");
+
   shifting = false;
   editing = null;
   alignedDraft = null;

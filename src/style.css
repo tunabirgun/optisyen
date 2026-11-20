@@ -471,3 +471,20 @@ section:has(> #groupMode) {
 .file-privacy a {
   margin-left: 0.5em;
 }
+
+.brand-home {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  flex: none;
+  color: inherit;
+  text-decoration: none;
+}
+.brand-home:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+main:not(.exam-home) #resumeExam,
+.exam-home :is(#layout, #issues, #work, #results) {
+  display: none;
+}

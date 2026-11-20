@@ -48,8 +48,13 @@
   <body>
     <header>
       <div>
-        <img src="logo.svg" width="34" height="34" alt="" />Optisyen<span
-          class="tool-credit"
+        <a
+          class="brand-home"
+          id="homeLink"
+          href="./"
+          aria-label="Optisyen ana sayfası"
+          ><img src="logo.svg" width="34" height="34" alt="" />Optisyen</a
+        ><span class="tool-credit"
           ><span>Optik formları okumak ve puanlamak için</span
           ><span
             ><a
@@ -64,7 +69,7 @@
       </div>
     </header>
     <main>
-      <h1>Optik Form Değerlendirme</h1>
+      <h1 tabindex="-1">Optik Form Değerlendirme</h1>
       <section>
         <fieldset id="groupMode">
           <legend>Sınav düzeni</legend>
@@ -76,6 +81,7 @@
             ><input type="radio" name="group" value="ab" /> A/B gruplu</label
           >
         </fieldset>
+        <button id="resumeExam" type="button">Sınava dön</button>
         <button id="reset" hidden>Yeni sınav</button>
       </section>
       <section id="setup">
@@ -119,21 +125,30 @@
                 id="keyFile"
                 type="file"
                 accept="application/pdf,.pdf"
-              /><small>Tüm öğrenciler için tek sayfalık PDF.</small></label
+              /><small
+                >Doğru cevapların işaretlendiği optik formu tek sayfalık PDF
+                olarak yükleyin.</small
+              ></label
             >
             <label id="groupKeyA" hidden
               >A kitapçığı cevap anahtarı<input
                 id="keyA"
                 type="file"
                 accept="application/pdf,.pdf"
-              /><small>A grubunun tek sayfalık cevap optiği.</small></label
+              /><small
+                >A kitapçığı için doğru cevapların işaretlendiği optik formu tek
+                sayfalık PDF olarak yükleyin.</small
+              ></label
             >
             <label id="groupKeyB" hidden
               >B kitapçığı cevap anahtarı<input
                 id="keyB"
                 type="file"
                 accept="application/pdf,.pdf"
-              /><small>B grubunun tek sayfalık cevap optiği.</small></label
+              /><small
+                >B kitapçığı için doğru cevapların işaretlendiği optik formu tek
+                sayfalık PDF olarak yükleyin.</small
+              ></label
             >
             <label
               >Öğrenci formları<input
