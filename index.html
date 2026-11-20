@@ -47,7 +47,21 @@
   </head>
   <body>
     <header>
-      <div><img src="logo.svg" width="34" height="34" alt="" />Optisyen</div>
+      <div>
+        <img src="logo.svg" width="34" height="34" alt="" />Optisyen<span
+          class="tool-credit"
+          ><span>Optik formları okumak ve puanlamak için</span
+          ><span
+            ><a
+              href="https://github.com/tunabirgun"
+              target="_blank"
+              rel="noopener noreferrer"
+              >@tunabirgun</a
+            >
+            tarafından hazırlandı.</span
+          ></span
+        >
+      </div>
     </header>
     <main>
       <h1>Optik Form Değerlendirme</h1>
@@ -131,6 +145,12 @@
               ></label
             >
           </div>
+          <p class="file-privacy">
+            PDF’ler cihazınızda işlenir.
+            <a href="https://github.com/tunabirgun/optisyen#readme"
+              >Kullanım kılavuzu</a
+            >
+          </p>
           <div class="actions">
             <button id="prepare" class="primary">Formları aç</button
             ><button id="demo">Örnekle dene</button>
@@ -239,14 +259,7 @@
         </div>
       </section>
     </main>
-    <footer>
-      <strong>Optisyen</strong> ·
-      <a href="https://github.com/tunabirgun">Tuna Birgün</a> ·
-      <a href="https://github.com/tunabirgun/optisyen"
-        >Kaynak kodu ve kullanım kılavuzu</a
-      ><br />PDF’ler tarayıcınızda işlenir. Yalnızca kaydettiğiniz alan düzeni
-      bu cihazda saklanır.
-    </footer>
+
     <script type="module" src="./src/app.js"></script>
   </body>
 </html>
