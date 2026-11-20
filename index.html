@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Optisyen</title>
+    <meta
+      name="description"
+      content="Taranmış optik formları cevap anahtarıyla değerlendirin ve soru bazında puanları Excel olarak indirin."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="tr_TR" />
+    <meta property="og:site_name" content="Optisyen" />
+    <meta property="og:url" content="https://tunabirgun.github.io/optisyen/" />
+    <meta property="og:title" content="Optisyen" />
+    <meta
+      property="og:description"
+      content="Taranmış optik formları cevap anahtarıyla değerlendirin ve soru bazında puanları Excel olarak indirin."
+    />
+    <meta
+      property="og:image"
+      content="https://tunabirgun.github.io/optisyen/social-card.png"
+    />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="Optisyen · Optik form okuma ve puanlama"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Optisyen" />
+    <meta
+      name="twitter:description"
+      content="Taranmış optik formları cevap anahtarıyla değerlendirin ve soru bazında puanları Excel olarak indirin."
+    />
+    <meta
+      name="twitter:image"
+      content="https://tunabirgun.github.io/optisyen/social-card.png"
+    />
+    <meta
+      name="twitter:image:alt"
+      content="Optisyen · Optik form okuma ve puanlama"
+    />
+    <link rel="icon" href="logo.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./src/style.css" />
+  </head>
+  <body>
+    <header>
+      <div><img src="logo.svg" width="34" height="34" alt="" />Optisyen</div>
+    </header>
+    <main>
+      <h1>Optik Form Değerlendirme</h1>
+      <section>
+        <fieldset id="groupMode">
+          <legend>Sınav düzeni</legend>
+          <label
+            ><input type="radio" name="group" value="single" checked /> Tek
+            gruplu</label
+          >
+          <label
+            ><input type="radio" name="group" value="ab" /> A/B gruplu</label
+          >
+        </fieldset>
+        <button id="reset" hidden>Yeni sınav</button>
+      </section>
+      <section id="setup" hidden>
+        <details id="configDetails" open>
+          <summary>Sınav ve belgeler</summary>
+          <div class="inputs">
+            <label
+              >Soru sayısı<input
+                id="count"
+                type="number"
+                min="1"
+                max="200"
+                value="25" /></label
+            ><label
+              >Şık sayısı<select id="choices">
+                <option>2</option>
+                <option>3</option>
+                <option>4</option>
+                <option selected>5</option>
+                <option>6</option>
+              </select></label
+            ><label
+              >Puanlama<select id="mode">
+                <option value="equal">Her soru eşit</option>
+                <option value="custom">Soru bazında</option>
+              </select></label
+            ><label
+              >Toplam puan<input
+                id="total"
+                type="number"
+                min="0.01"
+                step="any"
+                value="100"
+            /></label>
+          </div>
+          <p id="summary"></p>
+          <div id="weights"></div>
+          <div class="files">
+            <label
+              >Cevap anahtarı<input
+                id="keyFile"
+                type="file"
+                accept="application/pdf,.pdf" /><small
+                id="keyHelp"
+              ></small></label
+            ><label
+              >Öğrenci formları<input
+                id="students"
+                type="file"
+                accept="application/pdf,.pdf" /><small id="studentHelp"></small
+            ></label>
+          </div>
+          <div class="actions">
+            <button id="prepare" class="primary">Formları aç</button
+            ><button id="demo">Örnekle dene</button>
+          </div>
+        </details>
+      </section>
+      <p id="status" role="status" aria-live="polite"></p>
+      <section id="layout" hidden>
+        <h2>Okuma alanları</h2>
+        <p>
+          Her soru bloğu için ilk satırdaki ilk ve son şıkkı, ardından son
+          satırdaki ilk şıkkı işaretleyin. Birden çok bloğu soru sırasına göre
+          ekleyin.
+        </p>
+        <div class="inputs">
+          <label
+            >Bloktaki soru sayısı<input
+              id="rows"
+              type="number"
+              min="1"
+              value="25" /></label
+          ><button id="addBlock">Soru bloğu ekle</button>
+        </div>
+        <details class="optional-fields">
+          <summary>Kimlik ve kitapçık alanları</summary>
+          <div class="inputs">
+            <label
+              >Numara hane sayısı<input
+                id="digits"
+                type="number"
+                min="1"
+                max="20"
+                value="9" /></label
+            ><button id="addId">Numara alanını tanımla</button>
+          </div>
+          <div class="inputs">
+            <label
+              >Ad-soyad sütun sayısı<input
+                id="nameCols"
+                type="number"
+                min="1"
+                max="60"
+                value="20" /></label
+            ><label
+              >Harflerin yukarıdan aşağı sırası<input
+                id="alphabet"
+                value="ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZ"
+                maxlength="60" /></label
+            ><button id="addName">Ad-soyad alanını tanımla</button>
+          </div>
+          <button id="addBook" hidden>A/B baloncuklarını tanımla</button>
+        </details>
+        <p id="layoutInfo"></p>
+        <div class="actions">
+          <button id="reuse" hidden>Kaydedilmiş düzeni kullan</button
+          ><button id="saveLayout" disabled>Düzeni bu tarayıcıda sakla</button
+          ><button id="undo">Son alanı geri al</button
+          ><button id="read" class="primary">Anahtarı oku</button>
+        </div>
+      </section>
+      <section id="issues" hidden aria-labelledby="issuesTitle">
+        <h2 id="issuesTitle" tabindex="-1">Kontrol Gereken Alanlar</h2>
+        <div id="issueList"></div>
+      </section>
+      <div id="work" hidden>
+        <section class="preview">
+          <h2 id="pageTitle">Cevap anahtarı</h2>
+          <p id="hint" aria-live="polite"></p>
+          <canvas id="scan" aria-label="Optik form önizlemesi"></canvas>
+        </section>
+        <section id="review" hidden>
+          <h2 id="reviewTitle"></h2>
+          <div id="nav" class="actions"></div>
+          <label id="idLabel"
+            >Öğrenci numarası<input id="identity" autocomplete="off" /></label
+          ><label id="nameLabel" hidden
+            >Adı ve soyadı<input
+              id="studentName"
+              autocomplete="off"
+              aria-describedby="nameHint" /><small id="nameHint"></small
+          ></label>
+          <div
+            id="nameLetters"
+            class="actions"
+            aria-label="Türkçe harfler"
+            role="group"
+            hidden
+          ></div>
+          <label id="bookLabel" hidden
+            >Kitapçık türü<select id="bookType">
+              <option value="">Kontrol gerekli</option>
+              <option>A</option>
+              <option>B</option>
+            </select></label
+          >
+          <p id="note"></p>
+          <div id="answers"></div>
+          <button id="confirm" class="primary"></button>
+        </section>
+      </div>
+      <section id="results" hidden>
+        <h2>Sonuçlar</h2>
+        <div id="scores"></div>
+        <div class="actions">
+          <button id="export" class="primary">Excel tablosunu indir</button>
+        </div>
+      </section>
+    </main>
+    <footer>
+      <strong>Optisyen</strong> ·
+      <a href="https://github.com/tunabirgun">Tuna Birgün</a> ·
+      <a href="https://github.com/tunabirgun/optisyen"
+        >Kaynak kodu ve kullanım kılavuzu</a
+      ><br />PDF’ler tarayıcınızda işlenir. Yalnızca kaydettiğiniz alan düzeni
+      bu cihazda saklanır.
+    </footer>
+    <script type="module" src="./src/app.js"></script>
+  </body>
+</html>
