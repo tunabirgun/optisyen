@@ -1,10 +1,17 @@
 import * as pdfjsLib from "pdfjs-dist";
 import pdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import { exportScores } from "./export.js";
+import { timingGrid, timingGridAlphabet } from "./timing-grid.js";
 const el = (id) => document.getElementById(id),
   letters = "ABCDEF",
   fmt = (n) => n.toLocaleString("tr-TR", { maximumFractionDigits: 3 });
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
+const blog = ["tunabirgun.com", "www.tunabirgun.com"].includes(
+  location.hostname,
+);
+el("formProfile").value = blog ? "fixed" : "custom";
+el("gradeFields").hidden = el("exportGrades").hidden = !blog;
+if (blog) el("export").textContent = "Cevaplar ve puanları indir";
 let focusQuestion = 0,
   keyReasons = [],
   editing = null,
@@ -17,6 +24,7 @@ let keyDocs = [],
   studentDoc,
   blocks = [],
   pending = null,
+  fixedGrid = false,
   source,
   key = [],
   records = [],
@@ -166,7 +174,7 @@ async function raster(doc, n) {
   page.cleanup();
   return canvas;
 }
-async function start(keyFiles, studentsFile) {
+async function start(keyFiles, studentsFile, allowPreset = true) {
   validate();
   const grouped = groupMode() === "ab",
     groups = grouped ? ["A", "B"] : [""];
@@ -179,7 +187,7 @@ async function start(keyFiles, studentsFile) {
   }
   if (!studentsFile) throw Error("Öğrenci formları için PDF seçin.");
   const docs = [];
-  let sd, firstImage;
+  let sd, firstImage, preset;
   try {
     for (const [i, group] of groups.entries()) {
       const doc = await getDoc(keyFiles[i]);
@@ -192,6 +200,9 @@ async function start(keyFiles, studentsFile) {
     }
     sd = await getDoc(studentsFile);
     firstImage = await raster(docs[0], 1);
+    if (allowPreset && el("formProfile").value === "fixed") {
+      preset = timingGrid(firstImage, count(), options());
+    }
   } catch (error) {
     await Promise.allSettled(
       [...docs, sd].filter(Boolean).map((doc) => doc.loadingTask.destroy()),
@@ -213,7 +224,8 @@ async function start(keyFiles, studentsFile) {
   keys = {};
   key = [];
   records = [];
-  blocks = [];
+  fixedGrid = !!preset;
+  blocks = preset || [];
   current = -1;
   phase = "layout";
   pending = null;
@@ -227,7 +239,10 @@ async function start(keyFiles, studentsFile) {
   el("reset").hidden = false;
   el("layout").hidden = el("work").hidden = false;
   el("review").hidden = el("results").hidden = true;
-  el("count").disabled = el("choices").disabled = true;
+  el("count").disabled =
+    el("choices").disabled =
+    el("formProfile").disabled =
+      true;
   el("pageTitle").textContent = dual
     ? "A kitapçığı cevap anahtarı"
     : "Cevap anahtarı";
@@ -236,7 +251,11 @@ async function start(keyFiles, studentsFile) {
   paint();
   status(
     sd.numPages +
-      " öğrenci sayfası açıldı. İlk soru bloğunu tanımlayın veya kayıtlı düzeni seçin.",
+      (fixedGrid
+        ? " öğrenci sayfası açıldı. Okuma halkalarını kontrol edin ve anahtarı okuyun."
+        : allowPreset && el("formProfile").value === "fixed"
+          ? " öğrenci sayfası açıldı. Zamanlama işaretli düzen tanınamadı. Alanları elle tanımlayın veya kayıtlı düzeni seçin."
+          : " öğrenci sayfası açıldı. İlk soru bloğunu tanımlayın veya kayıtlı düzeni seçin."),
   );
 }
 el("reset").onclick = () => {
@@ -253,6 +272,10 @@ el("prepare").onclick = () =>
     ),
   );
 function layout() {
+  el("presetHelp").hidden = !fixedGrid;
+  el("manualLayout").hidden = fixedGrid;
+  el("undo").hidden = el("saveLayout").hidden = fixedGrid;
+  el("manualInstead").hidden = !fixedGrid;
   el("addName").disabled = blocks.some((b) => b.id === "name");
   el("addBook").hidden = !dual;
   el("addBook").disabled = blocks.some((b) => b.id === "booklet");
@@ -265,7 +288,7 @@ function layout() {
   el("read").disabled = assigned() !== count() || !!pending;
   el("saveLayout").disabled = el("read").disabled;
   try {
-    el("reuse").hidden = !localStorage.getItem(layoutKey());
+    el("reuse").hidden = fixedGrid || !savedLayout();
   } catch {
     el("reuse").hidden = true;
   }
@@ -303,6 +326,14 @@ function layout() {
         "Bu bloktaki son sorunun A baloncuğuna tıklayın.",
       ][i];
 }
+el("manualInstead").onclick = () => {
+  fixedGrid = false;
+  blocks = [];
+  el("rows").value = count();
+  layout();
+  paint();
+  status("İlk soru bloğunu tanımlayın veya kayıtlı düzeni seçin.");
+};
 function add(id) {
   let rows, cols, alphabet;
   if (id === "name") {
@@ -487,7 +518,8 @@ function measure(canvas, shift = [0, 0], areas = blocks) {
       .sort((a, b) => b.v - a.v);
     if (!pencil) {
       if (first.v < 0.16) return "-";
-      return first.v < 0.32 || second.v > 0.32 || first.v - second.v < 0.15
+      return first.v < 0.32 ||
+        (second && (second.v > 0.32 || first.v - second.v < 0.15))
         ? "?"
         : symbols[first.i];
     }
@@ -515,7 +547,9 @@ function measure(canvas, shift = [0, 0], areas = blocks) {
       r = radius(grid, w, h),
       // Sample the centre to keep preprinted outlines out of the ink measurement.
       values = grid.map((row) =>
-        row.map((p) => mark(p, r * (b.id === "booklet" ? 0.5 : 0.72), !b.id)),
+        row.map((p) =>
+          mark(p, r * (b.id === "booklet" ? 0.5 : fixedGrid ? 1 : 0.72), !b.id),
+        ),
       );
     if (b.id === "booklet") {
       const label = pick(values[0], "AB");
@@ -760,6 +794,29 @@ function review() {
     el("studentName").value = rec.studentName;
     el("nameHint").textContent =
       "Seçili harfi klavyeden veya aşağıdaki harflerden biriyle değiştirebilirsiniz.";
+    if (kind === "name" && fixedGrid) {
+      const nameGrid = rec.areas.find((b) => b.id === "name");
+      const [x, y] = centers(nameGrid, rec.shift)[0][0];
+      const crop = document.createElement("canvas");
+      crop.className = "name-scan";
+      crop.setAttribute("aria-label", "Formdaki el yazısıyla ad ve soyad");
+      crop.width = Math.round(source.width * 0.46);
+      crop.height = Math.round(source.height * 0.055);
+      crop
+        .getContext("2d")
+        .drawImage(
+          source,
+          (x - 0.46) * source.width,
+          (y - 0.014) * source.height,
+          crop.width,
+          crop.height,
+          0,
+          0,
+          crop.width,
+          crop.height,
+        );
+      el("nameLabel").prepend(crop);
+    }
   }
   if (!el("answers").hidden)
     questionEditor(isKey, rec, isKey ? key : rec.answers);
@@ -795,8 +852,16 @@ el("confirm").onclick = () =>
       if (dual) {
         const group = "AB"[keyPage - 1];
         if (keyPage < keyDocs.length) {
-          const img = await raster(keyDocs[keyPage], 1),
-            areas = blocks;
+          const img = await raster(keyDocs[keyPage], 1);
+          const areas = fixedGrid
+            ? timingGrid(img, count(), options())
+            : blocks;
+          if (!areas) {
+            img.width = img.height = 1;
+            throw Error(
+              "B anahtarının zamanlama işaretleri tanınamadı. İki anahtarı aynı yönde tarayın veya alanları elle tanımlayın.",
+            );
+          }
           keys[group] = { answers: [...key] };
           keyPage++;
           source = img;
@@ -812,15 +877,16 @@ el("confirm").onclick = () =>
         }
         keys[group] = { answers: [...key] };
       }
-      const template = registrationTemplate(source),
+      const template = fixedGrid ? null : registrationTemplate(source),
         next = [];
       for (let i = 1; i <= studentDoc.numPages; i++) {
         status(i + " / " + studentDoc.numPages + " öğrenci formu okunuyor…");
         const img = await raster(studentDoc, i);
         try {
-          const alignment = autoShift(img, template);
-          const record = measure(img, alignment.shift);
-          record.checkAlignment = !alignment.reliable;
+          const areas = fixedGrid ? timingGrid(img, count(), options()) : null;
+          const alignment = template ? autoShift(img, template) : null;
+          const record = measure(img, alignment?.shift, areas || blocks);
+          record.checkAlignment = fixedGrid ? !areas : !alignment.reliable;
           next.push(record);
         } finally {
           img.width = img.height = 1;
@@ -970,6 +1036,40 @@ el("export").onclick = () =>
       [...answerKeys, ...responses],
     );
     downloadWorkbook(blob, "Optisyen - Soru Bazında Puanlar.xlsx");
+  });
+el("exportGrades").onclick = () =>
+  action(async () => {
+    validate();
+    if (!blog || phase !== "done") throw Error("Bekleyen alanları düzeltin.");
+    const exam = el("examName").value.trim();
+    if (!exam) throw Error("Not tablosu için sınav adını girin.");
+    const sheet = {
+      name: exam,
+      questions: key.map((_, i) => i + 1 + ". Soru"),
+      maps: key.map(() => ""),
+      maximums: weights(),
+      showMaximums: true,
+      rows: scoreRows().map((row) => [
+        row[0],
+        row[1],
+        ...row.slice(dual ? 3 : 2, -1),
+        "",
+        "",
+      ]),
+    };
+    // The same-origin template exporter uses JSZip from the browser global.
+    globalThis.JSZip ??= (await import("jszip")).default;
+    const exporter = "/degerlendirici/web-exports.mjs";
+    const { webNativeFile } = await import(/* @vite-ignore */ exporter);
+    const blob = await webNativeFile("xlsx", {
+      code: el("courseCode").value.trim(),
+      name: el("courseName").value.trim(),
+      sheets: [sheet],
+    });
+    downloadWorkbook(
+      blob,
+      exam.replace(/[<>:"/\\|?*]/g, "-") + " - Not Tablosu.xlsx",
+    );
   });
 el("groupMode").onchange();
 settings(true);
@@ -1155,6 +1255,7 @@ el("demo").onclick = () =>
         ? [await sample(true, 0), await sample(true, 1)]
         : [await sample(true)],
       await sample(false),
+      false,
     );
     const pt = (x, y) => [x / 600, y / 800];
     blocks = [
@@ -1189,6 +1290,14 @@ function layoutKey() {
     "optisyen-public:grid:1:" + groupMode() + ":" + count() + ":" + options()
   );
 }
+function savedLayout() {
+  return (
+    localStorage.getItem(layoutKey()) ??
+    (blog
+      ? localStorage.getItem("optisyen:grid:1:" + count() + ":" + options())
+      : null)
+  );
+}
 el("saveLayout").onclick = () => {
   try {
     localStorage.setItem(layoutKey(), JSON.stringify(blocks));
@@ -1200,7 +1309,17 @@ el("saveLayout").onclick = () => {
 };
 el("reuse").onclick = () => {
   try {
-    const saved = JSON.parse(localStorage.getItem(layoutKey()));
+    const saved = JSON.parse(savedLayout());
+    if (blog && Array.isArray(saved)) {
+      for (const area of saved) {
+        if (
+          area?.id === "name" &&
+          !area.alphabet &&
+          area.rows === timingGridAlphabet.length
+        )
+          area.alphabet = timingGridAlphabet;
+      }
+    }
     if (
       !Array.isArray(saved) ||
       !saved.length ||

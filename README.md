@@ -21,6 +21,10 @@ Taranmış çoktan seçmeli sınavları tarayıcıda okuyup soru bazında puanla
 
 Düzenli aralıklı, dikdörtgen baloncuk ızgaraları kullanın. Her cevap bloğunda sorular yukarıdan aşağı, şıklar soldan sağa ilerler. Belirgin dönme, perspektif bozulması veya sayfanın kırpılması okumayı güçleştirir. Böyle bir sayfayı düz tarayın ve halkaların yerini kontrol edin.
 
+### Zamanlama işaretli formlar
+
+Beş şıklı ve en çok 100 soruluk, kenarında zamanlama işaretleri bulunan uyumlu formlar için **Zamanlama işaretli düzen** seçeneğini kullanın. Cevap, öğrenci numarası, ad-soyad ve A/B alanları işaretlere göre yerleştirilir. Anahtarı okumadan önce önizlemedeki halkaları kontrol edin. Düzen algılanmazsa alanları elle tanımlayabilir veya önceden kaydettiğiniz düzeni yükleyebilirsiniz.
+
 ## Veriler nerede tutulur?
 
 PDF’ler, adlar, numaralar ve puanlar sekmenin belleğinde işlenir. Sunucuya gönderilmez. Sayfayı yenilemeden önce sonuç dosyanızı indirin. **Düzeni bu tarayıcıda sakla** seçeneği yalnızca alan koordinatlarını ve tanımlarını cihazda tutar. Aynı sınav düzeni, soru ve şık sayısıyla yeni bir form açtığınızda **Kaydedilmiş düzeni kullan** ile geri çağırabilirsiniz.

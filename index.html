@@ -42,7 +42,7 @@
       name="twitter:image:alt"
       content="Optisyen · Optik form okuma ve puanlama"
     />
-    <link rel="icon" href="logo.svg" type="image/svg+xml" />
+    <link rel="icon" href="/logo.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="./src/style.css" />
   </head>
   <body>
@@ -51,9 +51,9 @@
         <a
           class="brand-home"
           id="homeLink"
-          href="./"
+          href="%BASE_URL%"
           aria-label="Optisyen ana sayfası"
-          ><img src="logo.svg" width="34" height="34" alt="" />Optisyen</a
+          ><img src="/logo.svg" width="34" height="34" alt="" />Optisyen</a
         ><span class="tool-credit"
           ><span>Optik formları okumak ve puanlamak için</span
           ><span
@@ -88,6 +88,15 @@
         <details id="configDetails" open>
           <summary>Sınav ve belgeler</summary>
           <div class="inputs">
+            <label
+              >Form düzeni
+              <select id="formProfile">
+                <option value="custom">Özel düzen</option>
+                <option value="fixed">
+                  Zamanlama işaretli düzen (5 şık, en çok 100 soru)
+                </option>
+              </select>
+            </label>
             <label
               >Soru sayısı<input
                 id="count"
@@ -175,54 +184,61 @@
       <p id="status" role="status" aria-live="polite"></p>
       <section id="layout" hidden>
         <h2>Okuma alanları</h2>
-        <p>
-          Her soru bloğu için ilk satırdaki ilk ve son şıkkı, ardından son
-          satırdaki ilk şıkkı işaretleyin. Birden çok bloğu soru sırasına göre
-          ekleyin.
+        <p id="presetHelp" hidden>
+          Alanlar hazır. Halkaların baloncukların merkezinde olduğunu kontrol
+          edin.
         </p>
-        <div class="inputs">
-          <label
-            >Bloktaki soru sayısı<input
-              id="rows"
-              type="number"
-              min="1"
-              value="25" /></label
-          ><button id="addBlock">Soru bloğu ekle</button>
+        <div id="manualLayout">
+          <p>
+            Her soru bloğu için ilk satırdaki ilk ve son şıkkı, ardından son
+            satırdaki ilk şıkkı işaretleyin. Birden çok bloğu soru sırasına göre
+            ekleyin.
+          </p>
+          <div class="inputs">
+            <label
+              >Bloktaki soru sayısı<input
+                id="rows"
+                type="number"
+                min="1"
+                value="25" /></label
+            ><button id="addBlock">Soru bloğu ekle</button>
+          </div>
+          <details class="optional-fields">
+            <summary>Kimlik ve kitapçık alanları</summary>
+            <div class="inputs">
+              <label
+                >Numara hane sayısı<input
+                  id="digits"
+                  type="number"
+                  min="1"
+                  max="20"
+                  value="9" /></label
+              ><button id="addId">Numara alanını tanımla</button>
+            </div>
+            <div class="inputs">
+              <label
+                >Ad-soyad sütun sayısı<input
+                  id="nameCols"
+                  type="number"
+                  min="1"
+                  max="60"
+                  value="20" /></label
+              ><label
+                >Harflerin yukarıdan aşağı sırası<input
+                  id="alphabet"
+                  value="ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZ"
+                  maxlength="60" /></label
+              ><button id="addName">Ad-soyad alanını tanımla</button>
+            </div>
+            <button id="addBook" hidden>A/B baloncuklarını tanımla</button>
+          </details>
         </div>
-        <details class="optional-fields">
-          <summary>Kimlik ve kitapçık alanları</summary>
-          <div class="inputs">
-            <label
-              >Numara hane sayısı<input
-                id="digits"
-                type="number"
-                min="1"
-                max="20"
-                value="9" /></label
-            ><button id="addId">Numara alanını tanımla</button>
-          </div>
-          <div class="inputs">
-            <label
-              >Ad-soyad sütun sayısı<input
-                id="nameCols"
-                type="number"
-                min="1"
-                max="60"
-                value="20" /></label
-            ><label
-              >Harflerin yukarıdan aşağı sırası<input
-                id="alphabet"
-                value="ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZ"
-                maxlength="60" /></label
-            ><button id="addName">Ad-soyad alanını tanımla</button>
-          </div>
-          <button id="addBook" hidden>A/B baloncuklarını tanımla</button>
-        </details>
         <p id="layoutInfo"></p>
         <div class="actions">
           <button id="reuse" hidden>Kaydedilmiş düzeni kullan</button
           ><button id="saveLayout" disabled>Düzeni bu tarayıcıda sakla</button
           ><button id="undo">Son alanı geri al</button
+          ><button id="manualInstead" hidden>Alanları elle tanımla</button
           ><button id="read" class="primary">Anahtarı oku</button>
         </div>
       </section>
@@ -269,7 +285,15 @@
       <section id="results" hidden>
         <h2>Sonuçlar</h2>
         <div id="scores"></div>
+        <div id="gradeFields" class="inputs export-fields" hidden>
+          <label>Ders kodu (isteğe bağlı)<input id="courseCode" /></label>
+          <label>Ders adı (isteğe bağlı)<input id="courseName" /></label>
+          <label>Sınav adı<input id="examName" value="Vize" /></label>
+        </div>
         <div class="actions">
+          <button id="exportGrades" class="primary" hidden>
+            Değerlendirici not tablosunu indir
+          </button>
           <button id="export" class="primary">Excel tablosunu indir</button>
         </div>
       </section>
